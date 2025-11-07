@@ -1,0 +1,14 @@
+[
+  {
+    "title": "Agent Log — 2025-11-06",
+    "content": "Fetched latest match stats and updated hero performance chart."
+  },
+  {
+    "title": "System",
+    "content": "Calculated daily winrate deltas and refreshed dashboard metrics."
+  },
+  {
+    "title": "User Note",
+    "content": "Dashboard now pulling data from live JSON files."
+  }
+]
