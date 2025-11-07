@@ -1,14 +1,29 @@
 [
   {
-    "title": "Agent Log — 2025-11-06",
-    "content": "Fetched latest match stats and updated hero performance chart."
+    "title": "Match insights refreshed",
+    "date": "2025-11-06T09:45:00Z",
+    "text": "Fetched the latest match stats and refreshed the hero performance charts with fresh winrate differentials.",
+    "image": {
+      "src": "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=800&q=80",
+      "alt": "A glowing analytics dashboard with charts and graphs"
+    }
   },
   {
-    "title": "System",
-    "content": "Calculated daily winrate deltas and refreshed dashboard metrics."
+    "title": "Leaderboards recalibrated",
+    "date": "2025-11-06T08:20:00Z",
+    "text": "Synced player leaderboards, recalculated streak alerts, and pushed notifications to subscribed channels.",
+    "image": {
+      "src": "https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=800&q=80",
+      "alt": "Esports players competing on stage"
+    }
   },
   {
-    "title": "User Note",
-    "content": "Dashboard now pulling data from live JSON files."
+    "title": "Live services verified",
+    "date": "2025-11-06T07:05:00Z",
+    "text": "Validated data sources after the overnight patch and confirmed live JSON endpoints are green across all regions.",
+    "image": {
+      "src": "https://images.unsplash.com/photo-1526379095098-d400fd0bf935?auto=format&fit=crop&w=800&q=80",
+      "alt": "Abstract network cables glowing in the dark"
+    }
   }
 ]
