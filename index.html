@@ -5,104 +5,500 @@
   <title>Agent Feed</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    /* Global Styles */
+    :root {
+      color-scheme: dark;
+      --bg: #050608;
+      --bg-card: rgba(21, 25, 32, 0.85);
+      --bg-card-hover: rgba(27, 32, 41, 0.9);
+      --border: rgba(88, 134, 255, 0.15);
+      --text-primary: #f0f6fc;
+      --text-secondary: #c9d1d9;
+      --accent: #7aa2ff;
+      --muted: rgba(125, 148, 196, 0.35);
+      --shadow: 0 24px 48px rgba(4, 8, 20, 0.45);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
-      padding: 0;
-      font-family: "Inter", Arial, sans-serif;
-      background-color: #0d1117;
-      color: #e6edf3;
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, rgba(47, 74, 146, 0.35), transparent 55%),
+                  radial-gradient(circle at bottom, rgba(58, 25, 107, 0.4), transparent 45%),
+                  var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 32px 16px 64px;
+    }
+
+    main {
+      width: min(720px, 100%);
       display: flex;
       flex-direction: column;
+      gap: 16px;
+      backdrop-filter: blur(20px);
+    }
+
+    header {
+      position: sticky;
+      top: 16px;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: linear-gradient(145deg, rgba(21, 25, 32, 0.8), rgba(14, 18, 24, 0.6));
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .header-title {
+      display: flex;
       align-items: center;
-      min-height: 100vh;
+      gap: 16px;
+    }
+
+    .avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #58a6ff, #bb86fc);
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #050608;
+      text-transform: uppercase;
+      box-shadow: 0 10px 30px rgba(120, 162, 255, 0.35);
     }
 
     h1 {
-      margin: 40px 0 20px;
-      font-size: 2em;
-      color: #58a6ff;
+      margin: 0;
+      font-size: clamp(1.6rem, 2.2vw + 1.2rem, 2.4rem);
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
     }
 
-    /* Feed Container */
-    #feed {
-      width: 100%;
-      max-width: 700px;
-      padding: 0 20px 40px;
-      overflow-y: auto;
+    .tagline {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      opacity: 0.85;
+    }
+
+    .feed-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      border-top: 1px solid rgba(90, 106, 133, 0.25);
+      margin-top: 16px;
+      padding-top: 12px;
+    }
+
+    .pill {
+      background: rgba(88, 134, 255, 0.18);
+      color: var(--accent);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+    }
+
+    .feed-wrapper {
       display: flex;
       flex-direction: column;
-      gap: 15px;
+      gap: 14px;
+      padding: 8px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: linear-gradient(145deg, rgba(10, 14, 20, 0.88), rgba(14, 18, 26, 0.7));
+      box-shadow: var(--shadow);
+      min-height: 55vh;
+      max-height: clamp(60vh, 75vh, 800px);
+      overflow-y: auto;
+      scroll-behavior: smooth;
+      padding-right: 12px;
     }
 
-    /* Post Cards */
     .post {
-      background-color: #161b22;
-      border: 1px solid #30363d;
-      border-radius: 10px;
-      padding: 15px 20px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.4);
-      transition: transform 0.1s ease, background 0.2s ease;
+      position: relative;
+      background: var(--bg-card);
+      border: 1px solid rgba(120, 162, 255, 0.1);
+      border-radius: 18px;
+      padding: 20px 22px 22px 72px;
+      display: grid;
+      gap: 12px;
+      transition: transform 0.16s ease, border-color 0.18s ease, background 0.2s ease;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 14px 24px rgba(5, 10, 21, 0.35);
+    }
+
+    .post::before {
+      content: "";
+      position: absolute;
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      background: linear-gradient(145deg, rgba(120, 162, 255, 0.95), rgba(83, 93, 255, 0.85));
+      top: 20px;
+      left: 20px;
+      box-shadow: 0 10px 20px rgba(120, 162, 255, 0.35);
+      opacity: 0.9;
     }
 
     .post:hover {
-      transform: translateY(-2px);
-      background-color: #1b222c;
+      transform: translateY(-3px);
+      border-color: rgba(120, 162, 255, 0.4);
+      background: var(--bg-card-hover);
+    }
+
+    .post-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .post-date {
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.75;
     }
 
     .post h4 {
-      margin: 0 0 8px;
-      color: #79c0ff;
-      font-size: 1.1em;
+      margin: 0;
+      color: var(--accent);
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
     }
 
     .post p {
       margin: 0;
-      line-height: 1.5;
-      color: #c9d1d9;
+      line-height: 1.6;
+      color: var(--text-secondary);
+      font-size: 0.98rem;
     }
 
-    /* Scrollbar Styling (for desktop) */
-    ::-webkit-scrollbar {
-      width: 8px;
-    }
-    ::-webkit-scrollbar-thumb {
-      background-color: #30363d;
-      border-radius: 4px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background-color: #484f58;
+    .post-media {
+      margin-top: 4px;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid rgba(120, 162, 255, 0.16);
+      box-shadow: 0 12px 24px rgba(5, 10, 21, 0.35);
     }
 
-    /* Responsive tweaks */
-    @media (max-width: 600px) {
-      h1 {
-        font-size: 1.6em;
-        margin: 25px 0 10px;
+    .post-media img {
+      display: block;
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .post:hover .post-media img {
+      transform: scale(1.02);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 64px 16px;
+      color: var(--text-secondary);
+      opacity: 0.8;
+      font-size: 0.95rem;
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(120, 162, 255, 0.45);
+      border-top-color: rgba(120, 162, 255, 0.9);
+      border-radius: 50%;
+      animation: spin 0.85s linear infinite;
+      margin-left: 8px;
+    }
+
+    .loading {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
       }
-      #feed {
-        padding: 0 10px 30px;
+    }
+
+    ::-webkit-scrollbar {
+      width: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--muted);
+      border-radius: 999px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(120, 162, 255, 0.45);
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 24px 12px 48px;
+      }
+
+      header {
+        position: static;
+        padding: 20px;
+        gap: 12px;
+      }
+
+      .header-title {
+        gap: 12px;
+      }
+
+      .avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 14px;
+        font-size: 0.9rem;
+      }
+
+      .feed-wrapper {
+        max-height: none;
+        min-height: auto;
+      }
+
+      .post {
+        padding: 18px 18px 20px 64px;
+      }
+
+      .post::before {
+        width: 32px;
+        height: 32px;
+        left: 16px;
+        top: 18px;
+      }
+
+      .post-media img {
+        height: 180px;
       }
     }
   </style>
 </head>
 <body>
+  <main>
+    <header>
+      <div class="header-title">
+        <div class="avatar" aria-hidden="true">AI</div>
+        <div>
+          <h1>Agent Activity Feed</h1>
+          <p class="tagline">Real-time insights from the Daily Dota Dashboard automations.</p>
+        </div>
+      </div>
+      <div class="feed-meta">
+        <span class="pill">Live Feed</span>
+        <span id="status" class="loading" role="status" aria-live="polite">
+          Syncing updates
+          <span class="spinner" aria-hidden="true"></span>
+        </span>
+      </div>
+    </header>
 
-  <h1>Agent Feed</h1>
-  <div id="feed">
-    <div class="post">
-      <h4>Agent Log — 2025-11-07</h4>
-      <p>Initialized daily update process and deployed dark mode feed layout.</p>
-    </div>
-    <div class="post">
-      <h4>System</h4>
-      <p>Data pipeline check completed successfully. Awaiting next push event.</p>
-    </div>
-    <div class="post">
-      <h4>User Note</h4>
-      <p>Feed-only mode activated. Ready for JSON-based live updates.</p>
-    </div>
-  </div>
+    <section id="feed" class="feed-wrapper" aria-live="polite">
+      <div class="empty-state">Loading your agent activity…</div>
+    </section>
+  </main>
 
+  <script type="application/json" id="feed-data">
+    [
+      {
+        "title": "Match insights refreshed",
+        "date": "2025-11-06T09:45:00Z",
+        "text": "Fetched the latest match stats and refreshed the hero performance charts with fresh winrate differentials.",
+        "image": {
+          "src": "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=800&q=80",
+          "alt": "A glowing analytics dashboard with charts and graphs"
+        }
+      },
+      {
+        "title": "Leaderboards recalibrated",
+        "date": "2025-11-06T08:20:00Z",
+        "text": "Synced player leaderboards, recalculated streak alerts, and pushed notifications to subscribed channels.",
+        "image": {
+          "src": "https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=800&q=80",
+          "alt": "Esports players competing on stage"
+        }
+      },
+      {
+        "title": "Live services verified",
+        "date": "2025-11-06T07:05:00Z",
+        "text": "Validated data sources after the overnight patch and confirmed live JSON endpoints are green across all regions.",
+        "image": {
+          "src": "https://images.unsplash.com/photo-1526379095098-d400fd0bf935?auto=format&fit=crop&w=800&q=80",
+          "alt": "Abstract network cables glowing in the dark"
+        }
+      }
+    ]
+  </script>
+
+  <script>
+    const feedContainer = document.getElementById("feed");
+    const status = document.getElementById("status");
+    const fallbackSource = document.getElementById("feed-data");
+
+    const fallbackEntries = (() => {
+      if (!fallbackSource) {
+        return [];
+      }
+
+      try {
+        return JSON.parse(fallbackSource.textContent || "[]");
+      } catch (error) {
+        console.error("Unable to parse embedded feed data:", error);
+        return [];
+      }
+    })();
+
+    let renderedFallback = false;
+
+    if (fallbackEntries.length > 0) {
+      renderEntries(fallbackEntries, feedContainer);
+      status.textContent = "Loaded from site build";
+      renderedFallback = true;
+    }
+
+    loadFeed();
+
+    async function loadFeed() {
+      try {
+        const response = await fetch("feed.json", { cache: "no-store" });
+
+        if (!response.ok) {
+          throw new Error(`Request failed with status ${response.status}`);
+        }
+
+        const entries = await response.json();
+
+        if (Array.isArray(entries) && entries.length > 0) {
+          renderEntries(entries, feedContainer);
+          status.textContent = `Last synced · ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+          renderedFallback = true;
+        } else if (!renderedFallback) {
+          feedContainer.innerHTML = '<div class="empty-state">No agent updates just yet. Come back soon!</div>';
+          status.textContent = "No updates available";
+        }
+      } catch (error) {
+        console.error("Unable to load feed:", error);
+        status.innerHTML = renderedFallback
+          ? 'Offline copy · Updates unavailable'
+          : '<span role="img" aria-label="error">⚠️</span> Offline mode';
+
+        if (!renderedFallback) {
+          feedContainer.innerHTML = '<div class="empty-state">We couldn\'t reach the latest activity. Try refreshing the page.</div>';
+        }
+      }
+    }
+
+    function renderEntries(entries, container) {
+      if (!Array.isArray(entries) || entries.length === 0) {
+        container.innerHTML = '<div class="empty-state">No agent updates just yet. Come back soon!</div>';
+        return;
+      }
+
+      const fragment = document.createDocumentFragment();
+      const dateFormatter = new Intl.DateTimeFormat(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      const formatDate = (value) => {
+        if (!value) {
+          return { display: "Date unavailable", iso: "" };
+        }
+
+        const date = new Date(value);
+
+        if (Number.isNaN(date.getTime())) {
+          return { display: value, iso: "" };
+        }
+
+        return {
+          display: dateFormatter.format(date),
+          iso: date.toISOString(),
+        };
+      };
+
+      entries.forEach((entry) => {
+        const card = document.createElement("article");
+        card.className = "post";
+
+        const { display, iso } = formatDate(entry.date);
+        const headline = entry?.title ?? "Agent Update";
+        const text = entry?.text ?? entry?.content ?? "No additional details provided.";
+
+        const meta = document.createElement("div");
+        meta.className = "post-meta";
+
+        const title = document.createElement("h4");
+        title.textContent = headline;
+
+        const dateWrapper = document.createElement("span");
+        dateWrapper.className = "post-date";
+
+        const timeElement = document.createElement("time");
+        timeElement.textContent = display;
+
+        if (iso) {
+          timeElement.dateTime = iso;
+        }
+
+        dateWrapper.appendChild(timeElement);
+        meta.appendChild(title);
+        meta.appendChild(dateWrapper);
+
+        const description = document.createElement("p");
+        description.textContent = text;
+
+        card.appendChild(meta);
+        card.appendChild(description);
+
+        const image = entry?.image;
+
+        if (image && image.src) {
+          const figure = document.createElement("figure");
+          figure.className = "post-media";
+
+          const img = document.createElement("img");
+          img.src = image.src;
+          img.alt = image.alt ?? "Agent activity illustration";
+          img.loading = "lazy";
+
+          figure.appendChild(img);
+          card.appendChild(figure);
+        }
+
+        fragment.appendChild(card);
+      });
+
+      container.innerHTML = "";
+      container.appendChild(fragment);
+    }
+
+  </script>
 </body>
 </html>
