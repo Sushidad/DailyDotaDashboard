@@ -10,11 +10,11 @@
       --bg: #050608;
       --bg-card: rgba(21, 25, 32, 0.85);
       --bg-card-hover: rgba(27, 32, 41, 0.9);
-      --border: rgba(255, 99, 99, 0.15);
-      --text-primary: #ff4d4d;
-      --text-secondary: #ff4d4d;
-      --accent: #ff4d4d;
-      --muted: rgba(255, 102, 102, 0.35);
+      --border: rgba(120, 162, 255, 0.18);
+      --text-primary: #d8e2ff;
+      --text-secondary: rgba(204, 216, 255, 0.88);
+      --accent: #7aa2ff;
+      --muted: rgba(120, 162, 255, 0.35);
       --shadow: 0 24px 48px rgba(4, 8, 20, 0.45);
     }
 
@@ -325,35 +325,104 @@
     const feedContainer = document.getElementById("feed");
     const status = document.getElementById("status");
     const SHEET_ID = "1VS-hPnS1KVueVlvl6E5V9JAv7im_pNE2nbHMOL0scxw";
-    const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+    const SHEET_GID = "0";
+    const SHEET_NAME = "Sheet1"; // Update if your sheet tab uses a different name.
+
+    const FEED_SOURCES = [
+      {
+        label: "Google Sheets",
+        url: `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=${SHEET_GID}&headers=1&tqx=out:json`,
+        parser: parseGoogleVisualization,
+        expects: "text",
+      },
+      {
+        label: "CSV fallback",
+        url: `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`,
+        parser: parseCsvExport,
+        expects: "text",
+      },
+    ];
+
+    if (SHEET_NAME) {
+      FEED_SOURCES.push({
+        label: "OpenSheet",
+        url: `https://opensheet.elk.sh/${SHEET_ID}/${encodeURIComponent(SHEET_NAME)}`,
+        parser: parseOpenSheet,
+        expects: "json",
+      });
+    }
 
     loadFeed();
 
     async function loadFeed() {
       setStatusLoading();
 
+      const errors = [];
+      let sawEmptyResponse = false;
+
+      for (const source of FEED_SOURCES) {
+        try {
+          setStatusLoading(`Syncing updates — ${source.label}`);
+          const entries = await fetchFeedSource(source);
+
+          if (entries.length === 0) {
+            sawEmptyResponse = true;
+            errors.push(`${source.label} returned no entries`);
+            continue;
+          }
+
+          renderEntries(entries, feedContainer);
+          status.textContent = `Last synced · ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+          return;
+        } catch (error) {
+          const reason = error?.name === "AbortError"
+            ? "request timed out"
+            : error?.message || "request failed";
+          console.error(`Unable to load feed from ${source.label}:`, error);
+          errors.push(`${source.label} — ${reason}`);
+        }
+      }
+
+      if (sawEmptyResponse && errors.every((message) => message.includes('returned no entries'))) {
+        status.textContent = "No updates available";
+        feedContainer.innerHTML = '<div class="empty-state">No agent updates just yet. Come back soon!</div>';
+        return;
+      }
+
+      if (errors.length > 0) {
+        const lastError = errors[errors.length - 1];
+        status.innerHTML = `<span role="img" aria-label="error">⚠️</span> Unable to load updates (${lastError})`;
+      } else {
+        status.textContent = "No updates available";
+      }
+
+      feedContainer.innerHTML = '<div class="empty-state">We couldn\'t reach the latest activity. Try refreshing the page.</div>';
+    }
+
+    async function fetchFeedSource(source) {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 10000);
+
       try {
-        const response = await fetch(SHEET_URL, { cache: "no-store" });
+        const response = await fetch(source.url, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
 
         if (!response.ok) {
-          throw new Error(`Request failed with status ${response.status}`);
+          throw new Error(`HTTP ${response.status}`);
         }
 
-        const text = await response.text();
-        const entries = extractEntriesFromSheet(text).map(normalizeEntry).filter(Boolean);
+        const payload = source.expects === "json" ? await response.json() : await response.text();
+        const rawEntries = source.parser(payload);
 
-        if (entries.length === 0) {
-          feedContainer.innerHTML = '<div class="empty-state">No agent updates just yet. Come back soon!</div>';
-          status.textContent = "No updates available";
-          return;
+        if (!Array.isArray(rawEntries)) {
+          throw new Error("Unexpected response format");
         }
 
-        renderEntries(entries, feedContainer);
-        status.textContent = `Last synced · ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
-      } catch (error) {
-        console.error("Unable to load feed:", error);
-        status.innerHTML = '<span role="img" aria-label="error">⚠️</span> Unable to reach Google Sheets';
-        feedContainer.innerHTML = '<div class="empty-state">We couldn't reach the latest activity. Try refreshing the page.</div>';
+        return rawEntries.map(normalizeEntry).filter(Boolean);
+      } finally {
+        window.clearTimeout(timeoutId);
       }
     }
 
@@ -445,7 +514,7 @@
       container.appendChild(fragment);
     }
 
-    function extractEntriesFromSheet(raw) {
+    function parseGoogleVisualization(raw) {
       if (typeof raw !== "string" || raw.trim() === "") {
         return [];
       }
@@ -472,22 +541,99 @@
               : cells.find((cell) => typeof cell?.v === "string" && cell.v.trim().startsWith("{"));
             const rawJson = typeof targetCell?.v === "string" ? targetCell.v.trim() : "";
 
-            if (!rawJson) {
-              return null;
-            }
-
-            try {
-              return JSON.parse(rawJson);
-            } catch (parseError) {
-              console.warn("Unable to parse row JSON:", parseError);
-              return null;
-            }
+            return safeParseJson(rawJson);
           })
           .filter(Boolean);
       } catch (error) {
         console.error("Unable to parse Google Sheets response:", error);
         return [];
       }
+    }
+
+    function parseCsvExport(raw) {
+      if (typeof raw !== "string" || raw.trim() === "") {
+        return [];
+      }
+
+      const lines = raw.trim().split(/?
+/);
+
+      if (lines.length <= 1) {
+        return [];
+      }
+
+      const header = splitCsvLine(lines[0]).map((value) => value.trim().toLowerCase());
+      const jsonColumnIndex = header.findIndex((value) => value === "json");
+
+      return lines.slice(1)
+        .map((line) => {
+          const cells = splitCsvLine(line);
+          const targetCell = jsonColumnIndex >= 0
+            ? cells[jsonColumnIndex]
+            : cells.find((cell) => cell.trim().startsWith("{"));
+
+          return safeParseJson(targetCell);
+        })
+        .filter(Boolean);
+    }
+
+    function parseOpenSheet(raw) {
+      if (!raw) {
+        return [];
+      }
+
+      const rows = Array.isArray(raw) ? raw : [];
+
+      return rows
+        .map((row) => {
+          if (row && typeof row === "object") {
+            const jsonValue = Object.values(row).find((value) => typeof value === "string" && value.trim().startsWith("{"));
+            return safeParseJson(jsonValue);
+          }
+
+          return null;
+        })
+        .filter(Boolean);
+    }
+
+    function safeParseJson(value) {
+      if (typeof value !== "string" || value.trim() === "") {
+        return null;
+      }
+
+      try {
+        return JSON.parse(value);
+      } catch (error) {
+        console.warn("Unable to parse row JSON:", error);
+        return null;
+      }
+    }
+
+    function splitCsvLine(line) {
+      const result = [];
+      let current = "";
+      let inQuotes = false;
+
+      for (let i = 0; i < line.length; i += 1) {
+        const char = line[i];
+
+        if (char === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            current += '"';
+            i += 1;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          result.push(current);
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+
+      result.push(current);
+      return result;
     }
 
     function normalizeEntry(entry) {
@@ -530,8 +676,8 @@
       return normalized;
     }
 
-    function setStatusLoading() {
-      status.innerHTML = 'Syncing updates <span class="spinner" aria-hidden="true"></span>';
+    function setStatusLoading(message = "Syncing updates") {
+      status.innerHTML = `${message} <span class="spinner" aria-hidden="true"></span>`;
     }
   </script>
 </body>
